@@ -1,0 +1,16 @@
+# Файлы окружения
+.env
+.venv/
+env/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+
+# Настройки IDE
+.vscode/
+.idea/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
