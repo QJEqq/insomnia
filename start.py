@@ -1,6 +1,6 @@
 from aiogram import Bot , Dispatcher
 import asyncio
-from apps.handlers import user_router
+from apps.handlers import user_router , admin_router
 from database.models import init_models
 from dotenv import load_dotenv
 import os
@@ -12,7 +12,7 @@ async def main() :
     bot = Bot(token=os.getenv('TOKEN'))
     dp.startup.register(start_up)
     dp.shutdown.register(shutdown)
-    dp.include_router(user_router)
+    dp.include_routers(user_router, admin_router)
     await dp.start_polling(bot)
     
 async def start_up( dispatcher : Dispatcher) :

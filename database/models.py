@@ -4,7 +4,7 @@ from sqlalchemy import ForeignKey, String, Integer, Boolean, Float, DateTime , T
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import Optional
-
+from enum import IntEnum
 engine = create_async_engine(url='sqlite+aiosqlite:///cyberclub.db',
                              echo=True)
 
@@ -13,6 +13,33 @@ async_session = async_sessionmaker(engine)
 class Base(DeclarativeBase):
     pass
 
+class AdminRole(IntEnum):
+    VIEWER = 1     # Только просмотр
+    MANAGER = 2    # Основные операции
+    SUPERADMIN = 3 # Полный доступ
+    def __ge__(self, other):
+        return self.value >= other.value
+class Admin(Base):
+    __tablename__ = 'admins'
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(unique=True)
+    username: Mapped[str] = mapped_column(String(32), nullable=True)
+    full_name: Mapped[str] = mapped_column(String(100))
+    role: Mapped[int] = mapped_column(default=AdminRole.MANAGER.value)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    last_login: Mapped[datetime] = mapped_column(nullable=True)
+
+class AdminLog(Base):
+    __tablename__ = 'admin_logs'
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    admin_id: Mapped[int] = mapped_column(ForeignKey("admins.id"))
+    action: Mapped[str] = mapped_column(String(50))
+    details: Mapped[str] = mapped_column(Text)
+    ip_address: Mapped[str] = mapped_column(String(15))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 class Branch(Base):
     """Филиалы киберклуба (Лесобаза, Московский и т.д.)"""
     __tablename__ = 'branches'
@@ -65,3 +92,4 @@ class Price(Base):
 async def init_models():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        

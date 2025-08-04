@@ -1,7 +1,7 @@
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from database.requests import get_branches, get_halls, get_prices_by_hall
-
+from database.requests import get_branches, get_halls, get_prices_by_hall 
+from database.models import AdminRole
 
 start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     [
@@ -239,3 +239,70 @@ async def pcs_halls_keyboard(branch_id: int):
         InlineKeyboardButton(text="🏠 На главную", callback_data="back_to_start")
     )
     return keyboard.adjust(1).as_markup()
+
+
+#admin keyboards
+
+
+async def admin_main_kb(user_id: int):
+    """Асинхронная версия с проверкой прав"""
+    from database.requests import check_admin_access  # Локальный импорт
+    
+    builder = InlineKeyboardBuilder()
+    
+    builder.button(text="📊 Статистика", callback_data="admin_stats")
+    
+    if await check_admin_access(user_id, AdminRole.MANAGER.value):
+        builder.button(text="💻 Управление компьютерами", callback_data="admin_computers")
+    
+    if await check_admin_access(user_id, AdminRole.SUPERADMIN.value):
+        builder.button(text="👑 Управление админами", callback_data="admin_manage_admins")
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+def AdminStartKeyboard(user_id: int):
+    builder = InlineKeyboardBuilder()
+    
+    builder.button(text="📊 Статистика", callback_data="admin_stats")
+    builder.button(text="💻 Управление компьютерами", callback_data="admin_computers")
+    builder.button(text="👑 Управление админами", callback_data="admin_manage_admins")
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+def admin_management_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(text="➕ Добавить админа", callback_data="add_admin")
+    builder.button(text="📋 Список админов", callback_data="list_admins")
+    builder.button(text="⬅️ Назад", callback_data="admin_back")
+    builder.adjust(1)
+    return builder.as_markup()
+
+async def admin_pcs_branches_keyboard():
+    keyboard = InlineKeyboardBuilder()
+    all_branches = await get_branches()
+    for branch in all_branches:
+        keyboard.add(InlineKeyboardButton(
+            text=f"{branch.emoji} {branch.name}",
+            callback_data=f"admin_pcs_branch:{branch.id}"
+        ))
+    keyboard.row(
+        InlineKeyboardButton(text="↩️ Назад", callback_data="back_admin")
+    )
+    return keyboard.adjust(1).as_markup()
+
+async def admin_pcs_halls_keyboard(branch_id: int):
+    keyboard = InlineKeyboardBuilder()
+    all_halls = await get_halls(branch_id)
+    for hall in all_halls:
+        keyboard.add(InlineKeyboardButton(
+            text=f"{hall.name}",
+            callback_data=f"admin_pcs_hall:{hall.id}"
+        ))
+    keyboard.row(
+        InlineKeyboardButton(text="↩️ Назад", callback_data="admin_computers"),
+        InlineKeyboardButton(text="🏠 На главную", callback_data="back_admin")
+    )
+    return keyboard.adjust(1).as_markup()
+
