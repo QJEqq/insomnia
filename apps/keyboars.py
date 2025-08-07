@@ -1,6 +1,6 @@
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from database.requests import get_branches, get_halls, get_prices_by_hall 
+from database.requests import get_branches, get_halls, get_prices_by_hall , get_branch
 from database.models import AdminRole
 
 start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -298,11 +298,40 @@ async def admin_pcs_halls_keyboard(branch_id: int):
     for hall in all_halls:
         keyboard.add(InlineKeyboardButton(
             text=f"{hall.name}",
-            callback_data=f"admin_pcs_hall:{hall.id}"
+            callback_data=f"admin_pcs_hall:{hall.id}:{branch_id}"
         ))
     keyboard.row(
         InlineKeyboardButton(text="↩️ Назад", callback_data="admin_computers"),
         InlineKeyboardButton(text="🏠 На главную", callback_data="back_admin")
     )
     return keyboard.adjust(1).as_markup()
+async def build_computers_keyboard(branch_id: int, hall_id: int):
+    keyboard = InlineKeyboardBuilder()
+    
+    # Кнопки изменения количества (+1/-1)
+    keyboard.row(
+        InlineKeyboardButton(
+            text="➖1 (Освободить)",
+            callback_data=f"comp_dec:{branch_id}:{hall_id}:1"
+        ),
+        InlineKeyboardButton(
+            text="➕1 (Занять)", 
+            callback_data=f"comp_inc:{branch_id}:{hall_id}:1"
+        )
+    )
+    
+    # Кнопки навигации
+    keyboard.row(
+        InlineKeyboardButton(
+            text="⬅️ Назад",
+            callback_data=f"admin_pcs_branch:{branch_id}"
+        ),
+        InlineKeyboardButton(
+            text="🏠 На главную",
+            callback_data="back_admin"
+        )
+    )
+    
+    return keyboard.adjust(1).as_markup()
+
 

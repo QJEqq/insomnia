@@ -1,7 +1,6 @@
 from database.models import AdminRole, Branch, Hall, Computer, async_session, Price , Admin , AdminLog
 from sqlalchemy import func, select, update 
 from typing import Optional 
-from sqlalchemy import select, update, insert
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 from typing import Optional
@@ -116,3 +115,64 @@ async def get_computers_all():
             'busy': busy
         }   
     
+async def get_computers_stats(branch_id: int, hall_id: int) -> dict[str, int]:
+    """Возвращает статистику компьютеров в указанном зале"""
+    async with async_session() as session:
+        # Общее количество компьютеров
+        total = await session.scalar(
+            select(func.count(Computer.id))
+            .where(
+                (Computer.branch_id == branch_id) &
+                (Computer.hall_id == hall_id)
+            )
+        ) or 0
+
+        # Количество свободных компьютеров
+        free = await session.scalar(
+            select(func.count(Computer.id))
+            .where(
+                (Computer.branch_id == branch_id) &
+                (Computer.hall_id == hall_id) &
+                (Computer.is_busy == False)
+            )
+        ) or 0
+
+        return {
+            'total': total,
+            'free': free,
+            'busy': total - free
+        }
+
+async def toggle_computer_status(computer_id: int) -> bool:
+    """Переключает статус компьютера между занят/свободен"""
+    async with async_session() as session:
+        computer = await session.get(Computer, computer_id)
+        if not computer:
+            return False
+        
+        computer.is_busy = not computer.is_busy
+        await session.commit()
+        return True
+
+async def set_computers_status(branch_id: int, hall_id: int, busy_count: int) -> bool:
+    """Устанавливает указанное количество занятых компьютеров"""
+    async with async_session() as session:
+        try:
+            computers = await session.scalars(
+                select(Computer)
+                .where(
+                    (Computer.branch_id == branch_id) &
+                    (Computer.hall_id == hall_id)
+                )
+                .order_by(Computer.id)
+            )
+            computers = computers.all()
+
+            for i, computer in enumerate(computers):
+                computer.is_busy = i < busy_count
+            
+            await session.commit()
+            return True
+        except Exception as e:
+            await session.rollback()
+            raise e
