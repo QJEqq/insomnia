@@ -18,7 +18,15 @@ class AdminRole(IntEnum):
     MANAGER = 2    # Основные операции
     SUPERADMIN = 3 # Полный доступ
     def __ge__(self, other):
-        return self.value >= other.value
+        return self.value >= other
+    @property
+    def display_name(self):
+        names = {
+            self.VIEWER: "👀 Зритель",
+            self.MANAGER: "🛠 Менеджер", 
+            self.SUPERADMIN: "👑 Суперадмин"
+        }
+        return names.get(self, "Неизвестная роль")
 class Admin(Base):
     __tablename__ = 'admins'
     

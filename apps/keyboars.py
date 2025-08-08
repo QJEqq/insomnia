@@ -244,29 +244,17 @@ async def pcs_halls_keyboard(branch_id: int):
 #admin keyboards
 
 
-async def admin_main_kb(user_id: int):
-    """Асинхронная версия с проверкой прав"""
-    from database.requests import check_admin_access  # Локальный импорт
-    
+def AdminStartKeyboard(user_role: int):
     builder = InlineKeyboardBuilder()
     
     builder.button(text="📊 Статистика", callback_data="admin_stats")
-    
-    if await check_admin_access(user_id, AdminRole.MANAGER.value):
+    # Менеджеры и суперадмины видят управление компьютерами
+    if user_role >= 2:  # 2 - MANAGER, 3 - SUPERADMIN
         builder.button(text="💻 Управление компьютерами", callback_data="admin_computers")
     
-    if await check_admin_access(user_id, AdminRole.SUPERADMIN.value):
+    # Только суперадмины видят управление админами
+    if user_role >= 3:  # 3 - SUPERADMIN
         builder.button(text="👑 Управление админами", callback_data="admin_manage_admins")
-    
-    builder.adjust(1)
-    return builder.as_markup()
-
-def AdminStartKeyboard(user_id: int):
-    builder = InlineKeyboardBuilder()
-    
-    builder.button(text="📊 Статистика", callback_data="admin_stats")
-    builder.button(text="💻 Управление компьютерами", callback_data="admin_computers")
-    builder.button(text="👑 Управление админами", callback_data="admin_manage_admins")
     
     builder.adjust(1)
     return builder.as_markup()
@@ -275,9 +263,21 @@ def admin_management_kb():
     builder = InlineKeyboardBuilder()
     builder.button(text="➕ Добавить админа", callback_data="add_admin")
     builder.button(text="📋 Список админов", callback_data="list_admins")
-    builder.button(text="⬅️ Назад", callback_data="admin_back")
+    builder.button(text="✏️ Изменить админа", callback_data="edit_admin"),
+    builder.button(text="❌ Удалить админа", callback_data="delete_admin"),
+    builder.button(text="⬅️ Назад", callback_data="back_admin")
     builder.adjust(1)
     return builder.as_markup()
+
+async def roles_kb():
+    kb = InlineKeyboardBuilder()
+    kb.add(
+        InlineKeyboardButton(text="👀 Зритель", callback_data="role_1"),
+        InlineKeyboardButton(text="🛠 Менеджер", callback_data="role_2"),
+        InlineKeyboardButton(text="👑 Суперадмин", callback_data="role_3"),
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_action")
+    )
+    return kb.adjust(2).as_markup()
 
 async def admin_pcs_branches_keyboard():
     keyboard = InlineKeyboardBuilder()

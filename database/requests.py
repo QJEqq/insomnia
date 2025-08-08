@@ -176,3 +176,50 @@ async def set_computers_status(branch_id: int, hall_id: int, busy_count: int) ->
         except Exception as e:
             await session.rollback()
             raise e
+        
+async def show_admins():
+    async with async_session() as session :
+        async with async_session() as session:
+            result = await session.execute(
+                select(
+                    Admin.id,
+                    Admin.full_name,
+                    Admin.user_id,
+                    Admin.created_at,
+                    Admin.role
+                ).order_by(Admin.id))
+            return result.all()
+        
+async def get_admin_by_id(admin_id: int):
+    async with async_session() as session:
+        result = await session.execute(select(Admin).where(Admin.id == admin_id))
+        return result.scalar_one_or_none()
+
+async def update_admin_role(admin_id: int, new_role: int):
+    async with async_session() as session:
+        admin = await session.get(Admin, admin_id)
+        if admin:
+            admin.role = new_role
+            await session.commit()
+            return True
+        return False
+
+async def delete_admin(admin_id: int):
+    async with async_session() as session:
+        admin = await session.get(Admin, admin_id)
+        if admin:
+            await session.delete(admin)
+            await session.commit()
+            return True
+        return False
+    
+async def get_user_role(user_id: int) -> AdminRole:
+    async with async_session() as session:
+        # Ищем пользователя в таблице админов
+        result = await session.execute(
+            select(Admin.role)
+            .where(Admin.user_id == user_id)
+        )
+        role = result.scalar_one_or_none()
+ 
+        return AdminRole(role) if role is not None else AdminRole.VIEWER
